@@ -5,16 +5,16 @@ rssFullContent = true
 favicon = "/favicon.png"
 
 [footer]
-since = 2020
+since = 2022
 customText = ""
 
 [dateFormat]
-published = "Jan 02, 2006"
-lastUpdated = "Jan 02, 2006 15:04 MST"
+published = "2006-01-02"
+lastUpdated = "2006-01-02 15:04 MST"
 
 [sidebar]
-emoji = "🍥"
-subtitle = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+emoji = "📝"
+subtitle = "技術筆記、學習紀錄與實作心得"
 
 [sidebar.avatar]
 enabled = true
@@ -22,7 +22,7 @@ local = true
 src = "img/avatar.png"
 
 [article]
-headingAnchor = false
+headingAnchor = true
 math = false
 readingTime = true
 
@@ -76,8 +76,8 @@ enabled = true
 
 ## Comments
 [comments]
-enabled = true
-provider = "disqus"
+enabled = false
+provider = ""
 
 [comments.disqusjs]
 shortname = ""

@@ -3,8 +3,8 @@ name: Update theme
 # Controls when the workflow will run
 on:
   schedule:
-    # Update theme automatically everyday at 00:00 UTC
-    - cron: "0 0 * * *"
+    # Check monthly instead of creating noisy daily workflow runs.
+    - cron: "0 0 1 * *"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -18,19 +18,27 @@ jobs:
       contents: write
     
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v3
         with:
-          hugo-version: 'latest'
+          hugo-version: '0.164.0'
           extended: true
 
       - name: Update theme
-        run: hugo mod get -u
+        run: hugo mod get -u github.com/CaiJimmy/hugo-theme-stack/v3
 
       - name: Tidy go.mod, go.sum
         run: hugo mod tidy
+
+      - name: Verify site
+        run: hugo --minify --gc
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5

@@ -1,0 +1,4 @@
+{{- $user := .Get 0 -}}
+{{- $id := .Get 1 -}}
+{{- $file := cond (ge (len .Params) 3) (printf "?file=%s" (.Get 2 | urlquery)) "" -}}
+<script src="https://gist.github.com/{{ $user }}/{{ $id }}.js{{ $file }}"></script>
