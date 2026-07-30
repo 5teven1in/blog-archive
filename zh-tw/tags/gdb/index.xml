@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>GDB on Steven Lin's Blog</title><link>https://stevenlin.cc/blog/zh-tw/tags/gdb/</link><description>Recent content in GDB on Steven Lin's Blog</description><generator>Hugo -- gohugo.io</generator><language>zh-TW</language><lastBuildDate>Fri, 22 Jun 2018 23:36:52 +0800</lastBuildDate><atom:link href="https://stevenlin.cc/blog/zh-tw/tags/gdb/index.xml" rel="self" type="application/rss+xml"/><item><title>Pwn 技巧</title><link>https://stevenlin.cc/blog/zh-tw/p/pwn-tips/</link><pubDate>Fri, 22 Jun 2018 23:36:52 +0800</pubDate><guid>https://stevenlin.cc/blog/zh-tw/p/pwn-tips/</guid><description>&lt;h2 id="開始-pwn-之前"&gt;&lt;a href="#%e9%96%8b%e5%a7%8b-pwn-%e4%b9%8b%e5%89%8d" class="header-anchor"&gt;&lt;/a&gt;開始 Pwn 之前
+&lt;/h2&gt;&lt;h3 id="移除-alarm-timeout"&gt;&lt;a href="#%e7%a7%bb%e9%99%a4-alarm-timeout" class="header-anchor"&gt;&lt;/a&gt;移除 alarm timeout
+&lt;/h3&gt;&lt;p&gt;如果有 &lt;code&gt;alarm&lt;/code&gt; 做 timeout 且確定題目的洞不在 &lt;code&gt;alarm&lt;/code&gt; 裡，可以將它 patch 成 &lt;code&gt;isnan&lt;/code&gt;&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;把 binary 用 vim 打開&lt;/li&gt;
+&lt;li&gt;將 &lt;code&gt;alarm&lt;/code&gt; 的 function name 取代為 &lt;code&gt;isnan&lt;/code&gt; 儲存&lt;/li&gt;
+&lt;li&gt;完成&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id="連結帶有除錯資訊的-libc"&gt;&lt;a href="#%e9%80%a3%e7%b5%90%e5%b8%b6%e6%9c%89%e9%99%a4%e9%8c%af%e8%b3%87%e8%a8%8a%e7%9a%84-libc" class="header-anchor"&gt;&lt;/a&gt;連結帶有除錯資訊的 libc
+&lt;/h3&gt;&lt;p&gt;一般使用 gdb debug 的時候，進入 libc 的 function 中不會 symbol 等資訊。這樣比較難 debug 所以會希望可以 link 到一個有 debug info 的 libc&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;參考 &lt;a class="link" href="https://stevenlin.cc/blog/zh-tw/p/build-libc-with-debug-info/" &gt;Build libc with debug info&lt;/a&gt; 先編出一個帶有 debug info 的 libc&lt;/li&gt;
+&lt;li&gt;使用 &lt;code&gt;ldd &amp;lt;binary&amp;gt;&lt;/code&gt; 查看 link 到的 loader&lt;/li&gt;
+&lt;li&gt;將 loader 路徑 patch 成自己編的 loader 路徑&lt;/li&gt;
+&lt;li&gt;完成&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id="修改-loader-路徑的小技巧"&gt;&lt;a href="#%e4%bf%ae%e6%94%b9-loader-%e8%b7%af%e5%be%91%e7%9a%84%e5%b0%8f%e6%8a%80%e5%b7%a7" class="header-anchor"&gt;&lt;/a&gt;修改 loader 路徑的小技巧
+&lt;/h4&gt;&lt;p&gt;假設原本 loader 路徑為 &lt;code&gt;/lib64/ld-linux-x86-64.so.2&lt;/code&gt;，可以先建一個 soft link &lt;code&gt;/lib64/ld_linux-x86-64.so.2&lt;/code&gt; 指向自己編的 loader，接著只要把 binary loader 路徑中的 &lt;code&gt;ld-&lt;/code&gt; 換成 &lt;code&gt;ld_&lt;/code&gt; 即可&lt;/p&gt;
+&lt;h4 id="補充"&gt;&lt;a href="#%e8%a3%9c%e5%85%85" class="header-anchor"&gt;&lt;/a&gt;補充
+&lt;/h4&gt;&lt;p&gt;更換 loader 後他就會優先使用該目錄下的 libc，所以就可以 link 到有 debug info 的 libc囉&lt;/p&gt;</description></item><item><title>編譯帶有除錯資訊的 libc</title><link>https://stevenlin.cc/blog/zh-tw/p/build-libc-with-debug-info/</link><pubDate>Fri, 22 Jun 2018 23:36:52 +0800</pubDate><guid>https://stevenlin.cc/blog/zh-tw/p/build-libc-with-debug-info/</guid><description>&lt;p&gt;本文使用環境為 64 bit Ubuntu 16.04&lt;/p&gt;
+&lt;h2 id="下載原始碼"&gt;&lt;a href="#%e4%b8%8b%e8%bc%89%e5%8e%9f%e5%a7%8b%e7%a2%bc" class="header-anchor"&gt;&lt;/a&gt;下載原始碼
+&lt;/h2&gt;&lt;p&gt;由 &lt;a class="link" href="https://www.gnu.org/software/libc/" target="_blank" rel="noopener"
+&gt;The GNU C Library (glibc)&lt;/a&gt; 官方網站下載 glibc source code，以 glibc 2.23 為例&lt;/p&gt;
+&lt;p&gt;下載 glibc 2.23 並解壓縮&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;wget https://ftp.gnu.org/gnu/libc/glibc-2.23.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;tar zxvf glibc-2.23.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="設定與編譯"&gt;&lt;a href="#%e8%a8%ad%e5%ae%9a%e8%88%87%e7%b7%a8%e8%ad%af" class="header-anchor"&gt;&lt;/a&gt;設定與編譯
+&lt;/h2&gt;&lt;p&gt;進入 glibc-2.23 資料夾中並新增一個 build 的資料夾供編譯使用&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; glibc-2.23
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir build
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;進入 build 資料夾並設定編譯參數&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CFLAGS
+&lt;ul&gt;
+&lt;li&gt;debug 選項全開並盡量不要做優化&lt;/li&gt;
+&lt;li&gt;可參考以下範例&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;prefix
+&lt;ul&gt;
+&lt;li&gt;編譯完檔案所放位置&lt;/li&gt;
+&lt;li&gt;範例為放置家目錄下的 glibc 資料夾內&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; build
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;CFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;-g3 -ggdb3 -gdwarf-4 -Og -Wno-error&amp;#39;&lt;/span&gt; ../configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;/home/&lt;span class="sb"&gt;`&lt;/span&gt;whoami&lt;span class="sb"&gt;`&lt;/span&gt;/glibc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;編譯並安裝&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;make -j4
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;make install -j4
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="補充編譯-32-bit-glibc"&gt;&lt;a href="#%e8%a3%9c%e5%85%85%e7%b7%a8%e8%ad%af-32-bit-glibc" class="header-anchor"&gt;&lt;/a&gt;補充：編譯 32-bit glibc
+&lt;/h2&gt;&lt;p&gt;編譯 32 bit 版本的 glibc&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CC
+&lt;ul&gt;
+&lt;li&gt;gcc -m32&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;CFLAGS
+&lt;ul&gt;
+&lt;li&gt;host=i686-linux-gnu&lt;/li&gt;
+&lt;li&gt;build=i686-linux-gnu&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;CC&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;gcc -m32&amp;#39;&lt;/span&gt; &lt;span class="nv"&gt;CFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;-g3 -ggdb3 -gdwarf-4 -Og -Wno-error --host=i686-linux-gnu --bulid=i686-linux-gnu&amp;#39;&lt;/span&gt; ../configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;/home/&lt;span class="sb"&gt;`&lt;/span&gt;whoami&lt;span class="sb"&gt;`&lt;/span&gt;/glibc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item></channel></rss>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Note on Steven Lin's Blog</title><link>https://stevenlin.cc/blog/categories/note/</link><description>Recent content in Note on Steven Lin's Blog</description><generator>Hugo -- gohugo.io</generator><language>en-US</language><lastBuildDate>Fri, 22 Jun 2018 23:36:52 +0800</lastBuildDate><atom:link href="https://stevenlin.cc/blog/categories/note/index.xml" rel="self" type="application/rss+xml"/><item><title>Build libc with debug info</title><link>https://stevenlin.cc/blog/p/build-libc-with-debug-info/</link><pubDate>Fri, 22 Jun 2018 23:36:52 +0800</pubDate><guid>https://stevenlin.cc/blog/p/build-libc-with-debug-info/</guid><description>&lt;p&gt;This article uses 64-bit Ubuntu 16.04.&lt;/p&gt;
+&lt;h2 id="download-the-source-code"&gt;&lt;a href="#download-the-source-code" class="header-anchor"&gt;&lt;/a&gt;Download the source code
+&lt;/h2&gt;&lt;p&gt;Download the glibc source code from the official &lt;a class="link" href="https://www.gnu.org/software/libc/" target="_blank" rel="noopener"
+&gt;GNU C Library (glibc)&lt;/a&gt; website. This example uses glibc 2.23.&lt;/p&gt;
+&lt;p&gt;Download and extract glibc 2.23:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;wget https://ftp.gnu.org/gnu/libc/glibc-2.23.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;tar zxvf glibc-2.23.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="configure-and-build"&gt;&lt;a href="#configure-and-build" class="header-anchor"&gt;&lt;/a&gt;Configure and build
+&lt;/h2&gt;&lt;p&gt;Enter the glibc 2.23 directory and create a separate build directory:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; glibc-2.23
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;mkdir build
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Enter the build directory and configure the build options:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CFLAGS
+&lt;ul&gt;
+&lt;li&gt;Enable full debugging information and minimize optimization.&lt;/li&gt;
+&lt;li&gt;See the example below.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;prefix
+&lt;ul&gt;
+&lt;li&gt;The destination for the compiled files.&lt;/li&gt;
+&lt;li&gt;This example installs them in a &lt;code&gt;glibc&lt;/code&gt; directory under the current user&amp;rsquo;s home directory.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;cd&lt;/span&gt; build
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;CFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;-g3 -ggdb3 -gdwarf-4 -Og -Wno-error&amp;#39;&lt;/span&gt; ../configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;/home/&lt;span class="sb"&gt;`&lt;/span&gt;whoami&lt;span class="sb"&gt;`&lt;/span&gt;/glibc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;Build and install:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;make -j4
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;make install -j4
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="notes"&gt;&lt;a href="#notes" class="header-anchor"&gt;&lt;/a&gt;Notes
+&lt;/h2&gt;&lt;p&gt;To build a 32-bit version of glibc:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;CC
+&lt;ul&gt;
+&lt;li&gt;gcc -m32&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;CFLAGS
+&lt;ul&gt;
+&lt;li&gt;host=i686-linux-gnu&lt;/li&gt;
+&lt;li&gt;build=i686-linux-gnu&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-shell" data-lang="shell"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;CC&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;gcc -m32&amp;#39;&lt;/span&gt; &lt;span class="nv"&gt;CFLAGS&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;-g3 -ggdb3 -gdwarf-4 -Og -Wno-error --host=i686-linux-gnu --bulid=i686-linux-gnu&amp;#39;&lt;/span&gt; ../configure --prefix&lt;span class="o"&gt;=&lt;/span&gt;/home/&lt;span class="sb"&gt;`&lt;/span&gt;whoami&lt;span class="sb"&gt;`&lt;/span&gt;/glibc
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;</description></item><item><title>Pwn tips</title><link>https://stevenlin.cc/blog/p/pwn-tips/</link><pubDate>Fri, 22 Jun 2018 23:36:52 +0800</pubDate><guid>https://stevenlin.cc/blog/p/pwn-tips/</guid><description>&lt;h2 id="before-pwn"&gt;&lt;a href="#before-pwn" class="header-anchor"&gt;&lt;/a&gt;Before Pwn
+&lt;/h2&gt;&lt;h3 id="alarm"&gt;&lt;a href="#alarm" class="header-anchor"&gt;&lt;/a&gt;alarm
+&lt;/h3&gt;&lt;p&gt;If a binary uses &lt;code&gt;alarm&lt;/code&gt; as a timeout and you are sure the vulnerability is not inside &lt;code&gt;alarm&lt;/code&gt;, you can patch its function name to &lt;code&gt;isnan&lt;/code&gt;.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Open the binary in Vim.&lt;/li&gt;
+&lt;li&gt;Replace the function name &lt;code&gt;alarm&lt;/code&gt; with &lt;code&gt;isnan&lt;/code&gt;, then save the file.&lt;/li&gt;
+&lt;li&gt;Done.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3 id="link-libc-with-debugging-information"&gt;&lt;a href="#link-libc-with-debugging-information" class="header-anchor"&gt;&lt;/a&gt;Link libc with debugging information
+&lt;/h3&gt;&lt;p&gt;When debugging with GDB, stepping into a libc function normally provides no symbols or similar debugging information. This makes debugging harder, so it is useful to link the binary against a libc build that includes debugging information.&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Follow &lt;a class="link" href="https://stevenlin.cc/blog/p/build-libc-with-debug-info/" &gt;Build libc with debug info&lt;/a&gt; to build a libc with debugging information.&lt;/li&gt;
+&lt;li&gt;Run &lt;code&gt;ldd &amp;lt;binary&amp;gt;&lt;/code&gt; to identify the linked loader.&lt;/li&gt;
+&lt;li&gt;Patch the loader path so it points to the loader you built.&lt;/li&gt;
+&lt;li&gt;Done.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h4 id="a-shortcut-for-patching-the-loader-path"&gt;&lt;a href="#a-shortcut-for-patching-the-loader-path" class="header-anchor"&gt;&lt;/a&gt;A shortcut for patching the loader path
+&lt;/h4&gt;&lt;p&gt;Suppose the original loader path is &lt;code&gt;/lib64/ld-linux-x86-64.so.2&lt;/code&gt;. First create a symbolic link at &lt;code&gt;/lib64/ld_linux-x86-64.so.2&lt;/code&gt; that points to your custom loader. You then only need to replace &lt;code&gt;ld-&lt;/code&gt; with &lt;code&gt;ld_&lt;/code&gt; in the binary&amp;rsquo;s loader path.&lt;/p&gt;
+&lt;h4 id="note"&gt;&lt;a href="#note" class="header-anchor"&gt;&lt;/a&gt;Note
+&lt;/h4&gt;&lt;p&gt;After replacing the loader, it will prefer the libc in the same directory, allowing the binary to link against the libc build with debugging information.&lt;/p&gt;</description></item></channel></rss>

